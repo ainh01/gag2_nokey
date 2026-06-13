@@ -48,7 +48,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- MÀN HÌNH CHÍNH (HIỂN THỊ LUÔN)
+-- MÀN HÌNH CHÍNH
 local MainSystem = Instance.new("Frame")
 MainSystem.Size = UDim2.new(1, 0, 1, 0)
 MainSystem.BackgroundTransparency = 1
@@ -56,7 +56,7 @@ MainSystem.Parent = MainFrame
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 50)
-TitleLabel.Text = "Auto GAG2 [AUTO EXCEC VERSION]"
+TitleLabel.Text = "Auto GAG2 [auto exec V2]"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 18
@@ -75,20 +75,21 @@ local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 200, 0, 50)
 ToggleBtn.Position = UDim2.new(0.5, -100, 0.6, 0)
 ToggleBtn.Text = "TỰ ĐỘNG: BẬT"
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0) -- Mặc định màu xanh
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.Parent = MainSystem
 local BtnCorner = UICorner:Clone() BtnCorner.Parent = ToggleBtn
 
--- DANH SÁCH VẬT PHẨM
+-- DANH SÁCH VẬT PHẨM (ĐÃ THÊM MUSHROOM SEED)
 local supportedItems = {
     ["Speed Mushroom"] = "Mushrooms", ["Jump Mushroom"] = "Mushrooms",
     ["Supersize Mushroom"] = "Mushrooms", ["Shrink Mushroom"] = "Mushrooms",
     ["Invisibility Mushroom"] = "Mushrooms", 
     ["Gold"] = "Seeds", 
     ["Rainbow"] = "Seeds",
-    ["Bamboo"] = "Seeds"
+    ["Bamboo"] = "Seeds",
+    ["Mushroom"] = "Seeds" -- <== CẬP NHẬT TẠI ĐÂY
 }
 
 local function formatLV(str) return "\v" .. string.char(#str) .. str end
@@ -130,13 +131,12 @@ local function runAutoTrade()
                 table.insert(batch, allItems[j]) 
             end
             sendBatch(batch)
-            task.wait(11) -- Đợi 11s mỗi đợt gửi
+            task.wait(11) 
         end
     end
     isSending = false
 end
 
--- EVENT CLICK NÚT BẬT/TẮT
 ToggleBtn.MouseButton1Click:Connect(function()
     isAutoEnabled = not isAutoEnabled
     if isAutoEnabled then
@@ -148,12 +148,11 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- VÒNG LẶP CHÍNH
 task.spawn(function()
     while isScriptRunning do
         if isAutoEnabled and not isSending then
             runAutoTrade()
         end
-        task.wait(1) -- Kiểm tra trạng thái mỗi giây
+        task.wait(1)
     end
 end)
