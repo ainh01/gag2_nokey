@@ -2,7 +2,7 @@
 local friendBytes = "\208\053\048\000\004\066" 
 local remote = game:GetService("ReplicatedStorage"):WaitForChild("SharedModules"):WaitForChild("Packet"):WaitForChild("RemoteEvent")
 
--- BIẾN ĐIỀU KHIỂN (MẶC ĐỊNH BẬT)
+-- BIẾN ĐIỀU KHIỂN
 local isAutoEnabled = true
 local isSending = false
 local isScriptRunning = true 
@@ -13,7 +13,7 @@ local backpack = Players.LocalPlayer:WaitForChild("Backpack")
 
 -- TẠO UI CHÍNH
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BaHoai_Fast_UI"
+ScreenGui.Name = "BaHoai_Fast_UI_V3"
 ScreenGui.Parent = game.CoreGui
 
 local MainFrame = Instance.new("Frame")
@@ -29,7 +29,6 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = MainFrame
 
--- NÚT ĐÓNG
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -35, 0, 5)
@@ -48,7 +47,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- MÀN HÌNH CHÍNH
 local MainSystem = Instance.new("Frame")
 MainSystem.Size = UDim2.new(1, 0, 1, 0)
 MainSystem.BackgroundTransparency = 1
@@ -56,7 +54,7 @@ MainSystem.Parent = MainFrame
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 50)
-TitleLabel.Text = "Auto GAG2 [auto exec V2]"
+TitleLabel.Text = "Auto GAG2 [New Seeds Added]"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 18
@@ -81,15 +79,22 @@ ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.Parent = MainSystem
 local BtnCorner = UICorner:Clone() BtnCorner.Parent = ToggleBtn
 
--- DANH SÁCH VẬT PHẨM (ĐÃ THÊM MUSHROOM SEED)
+-- DANH SÁCH VẬT PHẨM (ĐÃ CẬP NHẬT THÊM HẠT GIỐNG MỚI)
 local supportedItems = {
+    -- Mushrooms
     ["Speed Mushroom"] = "Mushrooms", ["Jump Mushroom"] = "Mushrooms",
     ["Supersize Mushroom"] = "Mushrooms", ["Shrink Mushroom"] = "Mushrooms",
     ["Invisibility Mushroom"] = "Mushrooms", 
+    -- Seeds
     ["Gold"] = "Seeds", 
     ["Rainbow"] = "Seeds",
     ["Bamboo"] = "Seeds",
-    ["Mushroom"] = "Seeds" -- <== CẬP NHẬT TẠI ĐÂY
+    ["Mushroom"] = "Seeds",
+    ["Tulip"] = "Seeds",      -- Mới
+    ["Blueberry"] = "Seeds",  -- Mới
+    ["Strawberry"] = "Seeds", -- Mới
+    ["Carrot"] = "Seeds",     -- Mới
+    ["Tomato"] = "Seeds"      -- Mới
 }
 
 local function formatLV(str) return "\v" .. string.char(#str) .. str end
@@ -100,8 +105,11 @@ local function sendBatch(items)
     local header = "\249\000" .. string.char(headerByteValue) .. "\000\000" .. friendBytes
     local payload = ""
     for i, data in ipairs(items) do
+        -- Fix lỗi Stack > 255
+        local safeCount = math.clamp(math.floor(tonumber(data.count) or 1), 1, 255)
+        
         local indexMarker = (i == 1) and ("\028\005" .. string.char(i) .. "\028") or ("\005" .. string.char(i) .. "\028")
-        payload = payload .. indexMarker .. "\v\aItemKey" .. formatLV(data.name) .. "\v\005Count\005" .. string.char(data.count) .. "\v\bCategory" .. formatLV(data.cat) .. "\000"
+        payload = payload .. indexMarker .. "\v\aItemKey" .. formatLV(data.name) .. "\v\005Count\005" .. string.char(safeCount) .. "\v\bCategory" .. formatLV(data.cat) .. "\000"
     end
     remote:FireServer(buffer.fromstring(header .. payload .. "\000\000"))
 end
@@ -123,7 +131,7 @@ local function runAutoTrade()
     end
 
     if #allItems > 0 then
-        local batchSize = 30
+        local batchSize = 20 -- Giới hạn 20 món 1 pack
         for i = 1, #allItems, batchSize do
             if not isAutoEnabled or not isScriptRunning then break end
             local batch = {}
@@ -131,7 +139,7 @@ local function runAutoTrade()
                 table.insert(batch, allItems[j]) 
             end
             sendBatch(batch)
-            task.wait(11) 
+            task.wait(11) -- Delay an toàn
         end
     end
     isSending = false
@@ -139,13 +147,8 @@ end
 
 ToggleBtn.MouseButton1Click:Connect(function()
     isAutoEnabled = not isAutoEnabled
-    if isAutoEnabled then
-        ToggleBtn.Text = "TỰ ĐỘNG: BẬT"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-    else
-        ToggleBtn.Text = "TỰ ĐỘNG: TẮT"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-    end
+    ToggleBtn.Text = isAutoEnabled and "TỰ ĐỘNG: BẬT" or "TỰ ĐỘNG: TẮT"
+    ToggleBtn.BackgroundColor3 = isAutoEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
 end)
 
 task.spawn(function()
